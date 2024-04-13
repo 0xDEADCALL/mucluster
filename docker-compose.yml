@@ -1,0 +1,87 @@
+services:
+  # Master
+  node-master:
+    build: 
+      dockerfile: Dockerfile
+      context: ./base-node/.
+    image: mubase-node:latest
+    container_name: node-master
+    environment:
+      - WORKER_MODE=MASTER
+    hostname: node-master
+    ports:
+      - "7077:7077" 
+      - "11000:11000"
+      - "8080:8080"
+
+      # YARN UI
+      - "8088:8088"
+
+      # HDFS UI
+      - "9870:9870"
+
+      # Timeline service
+      - "19888:19888"
+      - "10020:10020"
+      - "8188:8188"
+
+    networks:
+      - net
+    labels:
+      - "traefik.enable=true"
+
+      # Go to YARN
+      - "traefik.http.routers.yarn.rule=Host(`yarn.localhost`)"
+      - "traefik.http.routers.yarn.service=yarn"
+      - "traefik.http.services.yarn.loadbalancer.server.port=8088"
+      
+      # Go to Hadoop
+      - "traefik.http.routers.hadoop.rule=Host(`hadoop.localhost`)"
+      - "traefik.http.routers.hadoop.service=hadoop"
+      - "traefik.http.services.hadoop.loadbalancer.server.port=9870"
+
+  # Slaves
+  node-slave-1:
+    build: 
+      dockerfile: Dockerfile
+      context: ./base-node/.
+    image: mubase-node:latest
+    depends_on:
+      - node-master
+    tty: true
+    environment:
+      - WORKER_MODE=SLAVE
+    ports:
+      - "8042:8042"
+      - "9861:9861"
+      - "8864:9864"
+    container_name: node-slave-1
+    hostname: node-slave-1
+    networks:
+      - net
+
+  
+  node-slave-2:
+    build: 
+      dockerfile: Dockerfile
+      context: ./base-node/.
+    image: mubase-node:latest
+    tty: true
+    depends_on:
+      - node-master
+    environment:
+      - WORKER_MODE=SLAVE
+    ports:
+      - "8043:8043"
+      - "9862:9862"
+      - "7864:9864"
+
+    container_name: node-slave-2
+    hostname: node-slave-2
+    networks:
+      - net
+
+networks:
+  net:
+    name: munetwork
+    driver: bridge

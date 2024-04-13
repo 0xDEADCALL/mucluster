@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+
+
+<configuration>
+        <property>
+            <!--Name the master node & port-->
+            <!--Watchout for 9000, it's used by VSCode Jupyter Server-->
+            <name>fs.default.name</name>
+            <value>hdfs://node-master:11000</value>
+        </property>
+
+        <!-- Confiure S3 access -->
+        <property>
+            <name>fs.s3a.impl</name>
+            <value>org.apache.hadoop.fs.s3a.S3AFileSystem</value>
+        </property>
+        <property>
+            <name>fs.s3a.access.key</name>
+            <value>y9kmpQA4RC2asIF4toWi</value>
+        </property>
+        <property>
+            <name>fs.s3a.secret.key</name>
+            <value>M9piklUa69UTjMcnX4zW1hl7LJJHym7BLbm0GZ2C</value>
+        </property>
+        <property>
+            <name>fs.s3a.endpoint</name>
+            <value>http://minio:10000</value>
+        </property>
+        <property>
+            <name>fs.s3a.path.style.access</name>
+            <value>true</value>
+        </property>
+        <property>
+            <name>fs.s3a.endpoint.region</name>
+            <value>anything</value>
+        </property>
+        <property>
+            <name>fs.s3a.connection.ssl.enabled	</name>
+            <value>false</value>
+        </property>
+        <property>
+            <name>fs.s3a.change.detection.mode</name>
+            <value>none</value>
+        </property>
+
+        <property>
+            <name>hadoop.http.filter.initializers</name>
+            <value>org.apache.hadoop.security.HttpCrossOriginFilterInitializer</value>
+        </property>
+
+        <property>
+            <name>hadoop.http.cross-origin.enabled	</name>
+            <value>true</value>
+        </property>
+
+
+</configuration>

@@ -1,0 +1,111 @@
+# Let's start with python and use it as base image for hadoop
+FROM ubuntu:18.04 AS hadoop-base
+
+# Install tools required by the OS
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+      sudo \
+      curl \
+      vim \
+      unzip \
+      rsync \
+      openjdk-8-jdk \
+      build-essential \
+      software-properties-common \
+      ssh && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+
+# Download binaries
+# Keep them at the beginning so downloads are chached
+RUN curl -O https://dlcdn.apache.org/hadoop/common/hadoop-3.4.0/hadoop-3.4.0.tar.gz
+RUN curl -O https://archive.apache.org/dist/spark/spark-3.5.1/spark-3.5.1-bin-hadoop3.tgz
+RUN curl -O https://archive.apache.org/dist/hbase/1.2.6/hbase-1.2.6-bin.tar.gz
+
+# Declare paths
+ENV HADOOP_CONF_DIR=/opt/hadoop/etc/hadoop
+ENV SPARK_HOME=/opt/spark
+ENV HADOOP_HOME=/opt/hadoop
+ENV JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+ENV PYSPARK_PYTHON=python3
+ENV HBASE_HOME=/opt/hbase
+ENV HBASE_CONF_DIR=/opt/hbase/conf
+ENV TIMELINE_LIB=${HADOOP_HOME}/share/hadoop/yarn/timelineservice
+
+# Make installation dir
+RUN mkdir -p ${HADOOP_HOME} && mkdir -p ${SPARK_HOME} && mkdir -p ${HBASE_HOME}
+
+# Unpack files
+RUN tar xzf  hadoop-3.4.0.tar.gz         -C ${HADOOP_HOME} --strip-components 1 && rm -rf hadoop-3.4.0.tar.gz 
+RUN tar xvzf spark-3.5.1-bin-hadoop3.tgz -C ${SPARK_HOME}  --strip-components 1 && rm -rf spark-3.5.1-bin-hadoop3.tgz 
+RUN tar xzf  hbase-1.2.6-bin.tar.gz      -C ${HBASE_HOME}  --strip-components 1 && rm -rf hbase-1.2.6-bin.tar.gz  
+
+# Start configuration
+FROM hadoop-base AS config-base
+
+# Generate SSH key for containers to communicate
+RUN ssh-keygen -t rsa -P '' -f ~/.ssh/id_rsa && \
+    cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys && \
+    chmod 600 ~/.ssh/authorized_keys
+
+RUN printf "Host * \n \tUserKnownHostsFile /dev/null \n \tStrictHostKeyChecking no" >> /root/.ssh/config
+RUN chmod 600 /root/.ssh/config
+
+# Copy configurations to each directory
+COPY /hadoop/*.xml         ${HADOOP_CONF_DIR}
+COPY /hbase/*.xml          ${HBASE_CONF_DIR}
+COPY /spark/*              ${SPARK_HOME}/conf
+
+# Add JAVA_HOME to *-env.sh
+RUN echo "export JAVA_HOME=${JAVA_HOME}" >> "$HADOOP_HOME/etc/hadoop/hadoop-env.sh"
+RUN echo "export JAVA_HOME=${JAVA_HOME}" >> "$HBASE_CONF_DIR/hadoop-env.sh"
+
+
+# Install additional JARs and enable S3 for hadoop
+RUN curl https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-aws/3.3.4/hadoop-aws-3.3.6.jar \
+        --output ${SPARK_HOME}/jars/hadoop-aws-3.3.6.jar
+RUN curl https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-bundle/1.12.262/aws-java-sdk-bundle-1.12.262.jar \
+        --output ${SPARK_HOME}/jars/aws-java-sdk-bundle-1.12.262.jar
+RUN curl https://repo1.maven.org/maven2/org/wildfly/openssl/wildfly-openssl/1.0.7.Final/wildfly-openssl-1.0.7.Final.jar \
+        --output ${SPARK_HOME}/jars/wildfly-openssl-1.0.7.Final.jar
+RUN curl https://repo1.maven.org/maven2/io/delta/delta-spark_2.12/3.0.0/delta-spark_2.12-3.0.0.jar \
+        --output ${SPARK_HOME}/jars/delta-spark_2.12-3.0.0.jar
+RUN curl https://repo1.maven.org/maven2/io/delta/delta-storage/3.0.0/delta-storage-3.0.0.jar \
+        --output ${SPARK_HOME}/jars/delta-storage-3.0.0.jar
+RUN curl https://repo1.maven.org/maven2/org/antlr/antlr4-runtime/4.9.3/antlr4-runtime-4.9.3.jar \
+        --output ${SPARK_HOME}/jars/antlr4-runtime-4.9.3.jar
+
+RUN echo "export HADOOP_OPTIONAL_TOOLS=\"hadoop-aws\"" >> "$HADOOP_HOME/etc/hadoop/hadoop-env.sh"
+
+# Set hadoop and yarn user
+ENV HDFS_NAMENODE_USER="root"
+ENV HDFS_DATANODE_USER="root"
+ENV HDFS_SECONDARYNAMENODE_USER="root"
+ENV YARN_RESOURCEMANAGER_USER="root"
+ENV YARN_NODEMANAGER_USER="root"
+
+# Export to HBASE classpath
+ENV HBASE_CLASSPATH=$HBASE_CLASSPATH:${TIMELINE_LIB}/hadoop-yarn-server-timelineservice-hbase-client-3.4.0.jar
+ENV HBASE_CLASSPATH=$HBASE_CLASSPATH:${TIMELINE_LIB}/hadoop-yarn-server-timelineservice-3.4.0.jar
+ENV HBASE_CLASSPATH=$HBASE_CLASSPATH:${TIMELINE_LIB}/hadoop-yarn-server-timelineservice-hbase-common-3.4.0.jar
+
+# Export additional paths
+ENV LD_LIBRARY_PATH=$HADOOP_HOME/lib/native
+ENV PATH=$PATH:${HADOOP_HOME}/bin:${HADOOP_HOME}/sbin:${SPARK_HOME}/bin:${SPARK_HOME}/sbin:${PATH}:${HBASE_HOME}/bin
+
+# HDFS ports
+EXPOSE 9870 9864 8020 9867 9868 8485 8480 50200 11000
+
+# YARN ports
+EXPOSE 8032 8030 8088 8031 8032 8030 8033 8040 8048 8042 10200 8188 8047 42197
+
+# Mapred ports
+EXPOSE 10020 19888 10033
+
+# Format the node
+RUN hdfs namenode -format -force
+
+# Entrypoint
+COPY entrypoint.sh .
+ENTRYPOINT ["./entrypoint.sh"] 
