@@ -4,7 +4,9 @@ services:
     build: 
       dockerfile: Dockerfile
       context: ./base-node/.
-    image: mubase-node:latest
+      args:
+        - type=master
+    image: mu-master:latest
     container_name: node-master
     environment:
       - WORKER_MODE=MASTER
@@ -25,27 +27,23 @@ services:
       - "10020:10020"
       - "8188:8188"
 
+      # Livy
+      - "8998:8998"
+
+      # Spark UI
+      - "18080:18080"
+
     networks:
       - net
-    labels:
-      - "traefik.enable=true"
-
-      # Go to YARN
-      - "traefik.http.routers.yarn.rule=Host(`yarn.localhost`)"
-      - "traefik.http.routers.yarn.service=yarn"
-      - "traefik.http.services.yarn.loadbalancer.server.port=8088"
-      
-      # Go to Hadoop
-      - "traefik.http.routers.hadoop.rule=Host(`hadoop.localhost`)"
-      - "traefik.http.routers.hadoop.service=hadoop"
-      - "traefik.http.services.hadoop.loadbalancer.server.port=9870"
 
   # Slaves
   node-slave-1:
     build: 
       dockerfile: Dockerfile
       context: ./base-node/.
-    image: mubase-node:latest
+      args:
+        - type=slave
+    image: mu-slave:latest
     depends_on:
       - node-master
     tty: true
@@ -65,7 +63,9 @@ services:
     build: 
       dockerfile: Dockerfile
       context: ./base-node/.
-    image: mubase-node:latest
+      args:
+        - type=slave
+    image: mu-slave:latest
     tty: true
     depends_on:
       - node-master
@@ -80,6 +80,22 @@ services:
     hostname: node-slave-2
     networks:
       - net
+
+  jupyterlab:
+    build: 
+      dockerfile: Dockerfile
+      context: ./spark-magic/.
+    container_name: jupyterlab
+    environment:
+      - UID=$UID
+      - GID=$GID
+    image: spark-magic:latest
+    ports:
+      - "8888:8888"
+    networks:
+      - net
+    volumes:
+      - "./notebooks:/home/lab:rw"
 
 networks:
   net:

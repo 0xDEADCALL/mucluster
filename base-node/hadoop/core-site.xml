@@ -3,15 +3,15 @@
 
 
 <configuration>
+        <!--Name the master node & port-->
+        <!--Watchout for 9000, it's used by VSCode Jupyter Server-->
         <property>
-            <!--Name the master node & port-->
-            <!--Watchout for 9000, it's used by VSCode Jupyter Server-->
             <name>fs.default.name</name>
             <value>hdfs://node-master:11000</value>
         </property>
 
         <!-- Confiure S3 access -->
-        <property>
+        <!-- <property>
             <name>fs.s3a.impl</name>
             <value>org.apache.hadoop.fs.s3a.S3AFileSystem</value>
         </property>
@@ -42,7 +42,7 @@
         <property>
             <name>fs.s3a.change.detection.mode</name>
             <value>none</value>
-        </property>
+        </property> -->
 
         <property>
             <name>hadoop.http.filter.initializers</name>
@@ -50,7 +50,7 @@
         </property>
 
         <property>
-            <name>hadoop.http.cross-origin.enabled	</name>
+            <name>hadoop.http.cross-origin.enabled</name>
             <value>true</value>
         </property>
 

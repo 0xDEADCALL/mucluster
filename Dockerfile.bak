@@ -1,21 +1,6 @@
-# Select the node type
-ARG type
-
 # Let's start with python and use it as base image for hadoop
-FROM ubuntu:18.04 AS slave
+FROM ubuntu:18.04 AS hadoop-base
 
-# Declare paths
-ENV HADOOP_CONF_DIR=/opt/hadoop/etc/hadoop
-ENV SPARK_HOME=/opt/spark
-ENV HADOOP_HOME=/opt/hadoop
-ENV LIVY_HOME /opt/livy
-ENV JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
-ENV PYSPARK_PYTHON=python3
-ENV HBASE_HOME=/opt/hbase
-ENV HBASE_CONF_DIR=/opt/hbase/conf
-ENV TIMELINE_LIB=${HADOOP_HOME}/share/hadoop/yarn/timelineservice
-
-# Install required tools
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
       software-properties-common \
@@ -35,31 +20,58 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Download binaries
-# Keep them at the beginning so downloads are cached
+# Keep them at the beginning so downloads are chached
 RUN curl -O https://dlcdn.apache.org/hadoop/common/hadoop-3.4.0/hadoop-3.4.0.tar.gz
 RUN curl -O https://archive.apache.org/dist/spark/spark-3.5.1/spark-3.5.1-bin-hadoop3.tgz
+RUN curl -O https://archive.apache.org/dist/hbase/1.2.6/hbase-1.2.6-bin.tar.gz
+RUN curl -L -O https://github.com/AlexStirban/incubator-livy/releases/download/v0.8.0-spark3-jvm-fix/livy-0.8.0-spark3-jvm.tar.gz
 
-# Install hadoop and spark
-RUN mkdir -p ${HADOOP_HOME} && mkdir -p ${SPARK_HOME}
+# Declare paths
+ENV HADOOP_CONF_DIR=/opt/hadoop/etc/hadoop
+ENV SPARK_HOME=/opt/spark
+ENV HADOOP_HOME=/opt/hadoop
+ENV LIVY_HOME /opt/livy
+ENV JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+ENV PYSPARK_PYTHON=python3
+ENV HBASE_HOME=/opt/hbase
+ENV HBASE_CONF_DIR=/opt/hbase/conf
+ENV TIMELINE_LIB=${HADOOP_HOME}/share/hadoop/yarn/timelineservice
+
+# Make installation dir
+RUN mkdir -p ${HADOOP_HOME} && mkdir -p ${SPARK_HOME} && mkdir -p ${HBASE_HOME} && mkdir -p ${LIVY_HOME}
+
+# Unpack files
 RUN tar xzf  hadoop-3.4.0.tar.gz          -C ${HADOOP_HOME} --strip-components 1 && rm -rf hadoop-3.4.0.tar.gz 
 RUN tar xvzf spark-3.5.1-bin-hadoop3.tgz  -C ${SPARK_HOME}  --strip-components 1 && rm -rf spark-3.5.1-bin-hadoop3.tgz 
+RUN tar xzf  hbase-1.2.6-bin.tar.gz       -C ${HBASE_HOME}  --strip-components 1 && rm -rf hbase-1.2.6-bin.tar.gz
+RUN tar xzf  livy-0.8.0-spark3-jvm.tar.gz -C ${LIVY_HOME}   --strip-components 1 && rm -rf livy-0.8.0-spark3-jvm.tar.gz 
 
-# Generate dummy SSH key for containers to communicate
+
+# Start configuration
+FROM hadoop-base AS config-base
+
+# Generate SSH key for containers to communicate
 RUN ssh-keygen -t rsa -P '' -f ~/.ssh/id_rsa && \
     cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys && \
     chmod 600 ~/.ssh/authorized_keys
+
 RUN printf "Host * \n \tUserKnownHostsFile /dev/null \n \tStrictHostKeyChecking no" >> /root/.ssh/config
 RUN chmod 600 /root/.ssh/config
 
-# Copy config files
-COPY /hadoop/*.xml   ${HADOOP_CONF_DIR}
-COPY /spark/*        ${SPARK_HOME}/conf
+# Copy configurations to each directory
+COPY /hadoop/*.xml         ${HADOOP_CONF_DIR}
+COPY /hbase/*.xml          ${HBASE_CONF_DIR}
+COPY /spark/*              ${SPARK_HOME}/conf
+COPY /livy/conf/*          ${LIVY_HOME}/conf
 
 # Add JAVA_HOME to *-env.sh
 RUN echo "export JAVA_HOME=${JAVA_HOME}" >> "$HADOOP_HOME/etc/hadoop/hadoop-env.sh"
+RUN echo "export JAVA_HOME=${JAVA_HOME}" >> "$HBASE_CONF_DIR/hadoop-env.sh"
 
 # Prepare hadoop to use AWS
 RUN echo "export HADOOP_OPTIONAL_TOOLS=\"hadoop-aws\"" >> "$HADOOP_HOME/etc/hadoop/hadoop-env.sh"
+RUN echo "export HADOOP_CONF_DIR=${HADOOP_CONF_DIR}" >> "$LIVY_HOME/conf/livy-env.sh"
+RUN echo "export SPARK_HOME=${SPARK_HOME}" >> "$LIVY_HOME/conf/livy-env.sh"
 
 # Set hadoop and yarn user
 ENV HDFS_NAMENODE_USER="root"
@@ -68,33 +80,6 @@ ENV HDFS_SECONDARYNAMENODE_USER="root"
 ENV YARN_RESOURCEMANAGER_USER="root"
 ENV YARN_NODEMANAGER_USER="root"
 
-# Export additional paths
-ENV LD_LIBRARY_PATH=$HADOOP_HOME/lib/native
-ENV PATH=$PATH:${HADOOP_HOME}/bin:${HADOOP_HOME}/sbin:${SPARK_HOME}/bin:${SPARK_HOME}/sbin
-
-# MASTER-NODE branch
-FROM slave AS master
-
-# Install hbase and modified livy server
-RUN curl -O https://archive.apache.org/dist/hbase/1.2.6/hbase-1.2.6-bin.tar.gz
-RUN curl -L -O https://github.com/AlexStirban/incubator-livy/releases/download/v0.8.0-spark3-jvm-fix/livy-0.8.0-spark3-jvm.tar.gz
-
-# Make installation dir
-RUN mkdir -p ${HBASE_HOME} && mkdir -p ${LIVY_HOME}
-
-# Unpack files
-RUN tar xzf  hbase-1.2.6-bin.tar.gz       -C ${HBASE_HOME}  --strip-components 1 && rm -rf hbase-1.2.6-bin.tar.gz
-RUN tar xzf  livy-0.8.0-spark3-jvm.tar.gz -C ${LIVY_HOME}   --strip-components 1 && rm -rf livy-0.8.0-spark3-jvm.tar.gz 
-
-# Copy configurations to each directory
-COPY /hbase/*.xml  ${HBASE_CONF_DIR}
-COPY /livy/*       ${LIVY_HOME}/conf
-
-# Configure Livy
-RUN echo "export JAVA_HOME=${JAVA_HOME}" >> "$HBASE_CONF_DIR/hadoop-env.sh"
-RUN echo "export HADOOP_CONF_DIR=${HADOOP_CONF_DIR}" >> "$LIVY_HOME/conf/livy-env.sh"
-RUN echo "export SPARK_HOME=${SPARK_HOME}" >> "$LIVY_HOME/conf/livy-env.sh"
-
 # Export to HBASE classpath
 ENV HBASE_CLASSPATH=$HBASE_CLASSPATH:${TIMELINE_LIB}/hadoop-yarn-server-timelineservice-hbase-client-3.4.0.jar
 ENV HBASE_CLASSPATH=$HBASE_CLASSPATH:${TIMELINE_LIB}/hadoop-yarn-server-timelineservice-3.4.0.jar
@@ -102,10 +87,7 @@ ENV HBASE_CLASSPATH=$HBASE_CLASSPATH:${TIMELINE_LIB}/hadoop-yarn-server-timeline
 
 # Export additional paths
 ENV LD_LIBRARY_PATH=$HADOOP_HOME/lib/native
-ENV PATH=${PATH}:${HBASE_HOME}/bin:${LIVY_HOME}/bin
-
-# Expose and boot into container
-FROM ${type} AS final
+ENV PATH=$PATH:${HADOOP_HOME}/bin:${HADOOP_HOME}/sbin:${SPARK_HOME}/bin:${SPARK_HOME}/sbin:${PATH}:${HBASE_HOME}/bin:${LIVY_HOME}/bin
 
 # HDFS ports
 EXPOSE 9870 9864 8020 9867 9868 8485 8480 50200 11000
@@ -118,9 +100,6 @@ EXPOSE 10020 19888 10033
 
 # Livy
 EXPOSE 8998
-
-# Spark UI
-EXPOSE 18080
 
 # Format the node
 RUN hdfs namenode -format -force

@@ -2,6 +2,7 @@
 
 # Start SSH
 service ssh start
+export SPARK_DIST_CLASSPATH=$($HADOOP_HOME/bin/hadoop classpath)
 
 # Check mode has been set
 if [[ -z "${WORKER_MODE}" ]]; then
@@ -46,13 +47,16 @@ if [ "${WORKER_MODE}" == "MASTER" ]; then
     yarn --daemon start resourcemanager
     mapred --daemon start historyserver
 
-    # Star spark history server
+    # Start spark history server
     start-history-server.sh
+
+    # Start livy
+    livy-server start
 
 # If it's a slave boot only 
 elif [ "${WORKER_MODE}" == "SLAVE" ]; then
     # start the worker node processes
     hdfs --daemon start datanode
     yarn --daemon start nodemanager
-
+fi
 sleep infinity
