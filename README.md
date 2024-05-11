@@ -76,7 +76,7 @@ shared between services:
 | **MINIO_ROOT_USER**          | root                                     | Root user for MinIO                                                                                                          |
 | **MINIO_ROOT_PASSWORD**      | wfNFHGIvYf1RrJ1                          | Root password for MinIO                                                                                                      |
 | **AWS_ACCESS_KEY_ID**        | y9kmpQA4RC2asIF4toWi                     | Initial access key created and propagated to the other services                                                              |
-| **AWS_SECRET_ACCESS_KEY**    | M9piklUa69UTjMcnX4zW1hl7LJJHym7BLbm0GZ2C | Initial access secret created and propagated to the other services                                                           |
+| **AWS_SECRET_ACCESS_KEY**    | M9piklUa69UTjMcnX4z<br>W1hl7LJJHym7BLbm0GZ2C | Initial access secret created and propagated to the other services                                                           |
 | **METASTORE_USER**           | meta                                     | User for the PostgreSQL metastore instance                                                                                   |
 | **METASTORE_PASS**           | 7dDWK2Ft                                 | Password for the PostgreSQL metastore instance                                                                               |
 | **NOTEBOOK_UID**             | [GID]                                    | User ID to be used for Jupyter Lab when creating files and folder.  Set it to be the same as your current user with `id -u`  |
