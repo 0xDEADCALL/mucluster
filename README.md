@@ -195,8 +195,6 @@ While this project serves as good starting point, it's not meant to explain how 
     * XML files: [core-site.xml](https://hadoop.apache.org/docs/r3.3.4/hadoop-project-dist/hadoop-common/core-default.xml), [hdfs-site.xml](https://hadoop.apache.org/docs/r3.3.4/hadoop-project-dist/hadoop-hdfs/hdfs-default.xml), [mapred-site.xml](https://hadoop.apache.org/docs/r3.3.4/hadoop-mapreduce-client/hadoop-mapreduce-client-core/mapred-default.xml), [yarn-site.xml](https://hadoop.apache.org/docs/r2.7.3/hadoop-yarn/hadoop-yarn-common/yarn-default.xml)
     * YARN: [Determining Memory Config](https://docs.cloudera.com/HDPDocuments/HDP2/HDP-2.6.5/bk_command-line-installation/content/determine-hdp-memory-config.html)
     * Timeline Service v2: [Overview](https://hadoop.apache.org/docs/stable/hadoop-yarn/hadoop-yarn-site/TimelineServiceV2.html) & [HBase Deployment](https://hbase.apache.org/book.html#quickstart)
-        > [!WARNING]
-        > You might be tempted to use the latest Hbase version, however the timelineservice v2 doesn't seem to work properly if we're not in version 1.2.6 and Java 1.8, upgrade at your own risk!
     * Hive: [Quickstart](https://cwiki.apache.org/confluence/display/Hive/GettingStarted)
     * Livy: [.conf template](https://github.com/apache/incubator-livy/blob/master/conf/livy.conf.template), [Build Livy with Docker](https://github.com/apache/incubator-livy), [(LIVY-863) Missing JVM class imports for Spark3](https://www.mail-archive.com/issues@livy.apache.org/msg00719.html)
     * Spark: [Spark Configuration](https://spark.apache.org/docs/latest/configuration.html)
@@ -204,6 +202,9 @@ While this project serves as good starting point, it's not meant to explain how 
 * Sparkmagic: [Install and Settings](https://github.com/jupyter-incubator/sparkmagic)
 * Hue: [hue.ini](https://docs.gethue.com/administrator/configuration/connectors/)
 * MinIO: [MinIO CLI](https://min.io/docs/minio/linux/reference/minio-mc.html)
+
+> [!WARNING]
+> You might be tempted to use the latest Hbase version, however the timelineservice v2 doesn't seem to work properly if we're not in version 1.2.6 and Java 1.8, upgrade at your own risk!
 
 ## Disclaimer
 This project is nothing more than a learning exercise for me. I tried making it approachable for anyone else; nonetheless, you'll need to have some understanding of Spark, Apache tools, and Docker. None of this should be used as it is in production environments as I had no security concerns at the time.
