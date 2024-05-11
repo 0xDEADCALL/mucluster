@@ -1,0 +1,60 @@
+<configuration>
+  <property>
+    <name>javax.jdo.option.ConnectionURL</name>
+    <value>jdbc:postgresql://metastore:5432/hive</value>
+  </property>
+
+  <property>
+    <name>hive.server2.thrift.port</name>
+    <value>12000</value>
+  </property>
+
+  <property>
+    <name>hive.server2.thrift.http.port</name>
+    <value>12001</value>
+  </property>
+
+  <property>
+    <name>hive.server2.webui.port</name>
+    <value>12002</value>
+  </property>
+
+  <property>
+    <name>javax.jdo.option.ConnectionDriverName</name>
+    <value>org.postgresql.Driver</value>
+  </property>
+
+  <!-- DO NOT REMOVE, WILL BE INJECTED IN DOCKER IMAGE -->
+  <property>
+    <name>javax.jdo.option.ConnectionUserName</name>
+    <value>[USER]</value>
+  </property>
+
+  <!-- DO NOT REMOVE, WILL BE INJECTED IN DOCKER IMAGE -->
+  <property>
+    <name>javax.jdo.option.ConnectionPassword</name>
+    <value>[PASSWORD]</value>
+  </property>
+
+  <property>
+    <name>hive.metastore.warehouse.dir</name>
+    <value>s3a://hive/warehouse</value>
+  </property>
+
+  <property>
+    <name>hive.server2.enable.doAs</name>
+    <value>FALSE</value>
+  </property>
+
+  <property>
+    <name>hive.execution.engine</name>
+    <value>spark</value>
+  </property>
+
+    <property>
+    <name>iceberg.engine.hive.enabled</name>
+    <value>TRUE</value>
+  </property>
+
+
+</configuration>

@@ -1,0 +1,9 @@
+#!/bin/bash
+set -e
+
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+	CREATE DATABASE hive;
+	CREATE DATABASE hue;
+	GRANT ALL PRIVILEGES ON DATABASE hive TO meta;
+    GRANT ALL PRIVILEGES ON DATABASE hue TO meta;
+EOSQL

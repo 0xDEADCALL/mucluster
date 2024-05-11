@@ -4,14 +4,9 @@
 service ssh start
 export SPARK_DIST_CLASSPATH=$($HADOOP_HOME/bin/hadoop classpath)
 
-# Check mode has been set
-if [[ -z "${WORKER_MODE}" ]]; then
-  echo "WORKER_MODE is not set"
-  exit 1
-fi
-
 # If the node is the master boot yarn and hadoop
-if [ "${WORKER_MODE}" == "MASTER" ]; then
+if [ "$TYPE" == "master" ]; 
+then
     # Boot as master node
     hdfs --daemon start namenode
 
@@ -28,7 +23,7 @@ if [ "${WORKER_MODE}" == "MASTER" ]; then
     done
 
     # Copy files
-    hadoop fs -put $TIMELINE_LIB/hadoop-yarn-server-timelineservice-hbase-coprocessor-3.4.0.jar \
+    hadoop fs -put $TIMELINE_LIB/hadoop-yarn-server-timelineservice-hbase-coprocessor-3.3.4.jar \
         /hbase/coprocessor/hadoop-yarn-server-timelineservice.jar
 
     # Populate HBase
@@ -47,14 +42,27 @@ if [ "${WORKER_MODE}" == "MASTER" ]; then
     yarn --daemon start resourcemanager
     mapred --daemon start historyserver
 
+    # Run schematool if we don't have a schema
+    has_schema=$( schematool -dbType postgres -info &> >(grep -c "\"VERSION\" does not exist") )
+    if [[ has_schema -eq 1 ]]
+    then
+        schematool -dbType postgres -initSchema
+    fi
+
     # Start spark history server
     start-history-server.sh
 
     # Start livy
     livy-server start
 
+    # Start hive
+    hiveserver2 start &
+    hiveserver2 --service metastore -p 12003 -verbose
+
+    
 # If it's a slave boot only 
-elif [ "${WORKER_MODE}" == "SLAVE" ]; then
+elif [ "$TYPE" == "slave" ]; 
+then
     # start the worker node processes
     hdfs --daemon start datanode
     yarn --daemon start nodemanager

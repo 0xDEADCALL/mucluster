@@ -1,0 +1,13 @@
+<configuration>
+
+  <property>
+    <name>hive.metastore.uris</name>
+    <value>thrift://node-master:12003</value>
+  </property>
+
+  <property>
+    <name>iceberg.engine.hive.enabled</name>
+    <value>TRUE</value>
+  </property>
+
+</configuration>

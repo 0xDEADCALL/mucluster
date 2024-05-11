@@ -1,0 +1,40 @@
+include:
+  - compute.yml
+
+services: 
+  jupyterlab:
+    build: 
+      dockerfile: Dockerfile
+      context: ../sparkmagic/.
+      args:
+      - UID=${NOTEBOOK_UID}
+      - GID=${NOTEBOOK_GID}
+    container_name: jupyterlab
+    depends_on:
+      - node-master
+      - node-slave-1
+      - node-slave-2
+    image: sparkmagic:latest
+    environment:
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - INCLUDE_NOTEBOOK_SAMPLES=${INCLUDE_NOTEBOOK_SAMPLES}
+    ports:
+      - "8888:8888"
+    networks:
+      - net
+    volumes:
+      - "../sparkmagic/data:/home/lab:rw"
+  
+  hue:
+    image: gethue/hue:latest
+    hostname: hue
+    container_name: hue
+    ports:
+    - "9999:8888"
+    volumes:
+      - ../metastore/hue.ini:/usr/share/hue/desktop/conf/z-hue.ini
+    depends_on:
+      - metastore
+    networks:
+      - net

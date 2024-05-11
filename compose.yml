@@ -1,0 +1,5 @@
+include:
+  - ./docker/networks.yml
+  - ./docker/storage.yml
+  - ./docker/compute.yml
+  - ./docker/analytics.yml

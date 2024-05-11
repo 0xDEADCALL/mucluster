@@ -1,20 +1,30 @@
+include:
+  - storage.yml
+
 services:
   # Master
   node-master:
     build: 
       dockerfile: Dockerfile
-      context: ./base-node/.
+      context: ../cluster/.
       args:
         - type=master
-    image: mu-master:latest
+        - metastore_user=${METASTORE_USER}
+        - metastore_pass=${METASTORE_PASS}
+    image: mumaster:latest
     container_name: node-master
-    environment:
-      - WORKER_MODE=MASTER
     hostname: node-master
+    depends_on:
+      - metastore
+      - minio
+    environment:
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
     ports:
       - "7077:7077" 
       - "11000:11000"
       - "8080:8080"
+      - "8032:8032"
 
       # YARN UI
       - "8088:8088"
@@ -33,6 +43,12 @@ services:
       # Spark UI
       - "18080:18080"
 
+      # Hive
+      - "12000:12000"
+      - "12001:12001"
+      - "12002:12002"
+      - "12003:12003"
+
     networks:
       - net
 
@@ -40,21 +56,21 @@ services:
   node-slave-1:
     build: 
       dockerfile: Dockerfile
-      context: ./base-node/.
+      context: ../cluster/.
       args:
         - type=slave
-    image: mu-slave:latest
+    image: muslave:latest
     depends_on:
       - node-master
-    tty: true
-    environment:
-      - WORKER_MODE=SLAVE
     ports:
       - "8042:8042"
       - "9861:9861"
       - "8864:9864"
     container_name: node-slave-1
     hostname: node-slave-1
+    environment:
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
     networks:
       - net
 
@@ -62,42 +78,20 @@ services:
   node-slave-2:
     build: 
       dockerfile: Dockerfile
-      context: ./base-node/.
+      context: ../cluster/.
       args:
         - type=slave
-    image: mu-slave:latest
-    tty: true
+    container_name: node-slave-2
+    hostname: node-slave-2
+    image: muslave:latest
     depends_on:
       - node-master
     environment:
-      - WORKER_MODE=SLAVE
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
     ports:
       - "8043:8043"
       - "9862:9862"
       - "7864:9864"
-
-    container_name: node-slave-2
-    hostname: node-slave-2
     networks:
       - net
-
-  jupyterlab:
-    build: 
-      dockerfile: Dockerfile
-      context: ./spark-magic/.
-    container_name: jupyterlab
-    environment:
-      - UID=$UID
-      - GID=$GID
-    image: spark-magic:latest
-    ports:
-      - "8888:8888"
-    networks:
-      - net
-    volumes:
-      - "./notebooks:/home/lab:rw"
-
-networks:
-  net:
-    name: munetwork
-    driver: bridge

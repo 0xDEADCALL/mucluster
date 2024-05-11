@@ -1,0 +1,42 @@
+include:
+  - networks.yml
+
+services:
+    minio:
+      image: "quay.io/minio/minio:latest"
+      container_name: minio
+      entrypoint: bash -c "/tmp/init.sh"
+      ports:
+        - "${MINIO_PORT}:${MINIO_PORT}"
+        - "${MINIO_CONSOLE_PORT}:${MINIO_CONSOLE_PORT}"
+      volumes:
+        - ../minio/data:/data
+        - ../minio/init.sh:/tmp/init.sh
+        - ../minio/samples:/tmp/samples
+      environment:
+        - MINIO_PORT=${MINIO_PORT}
+        - MINIO_CONSOLE_PORT=${MINIO_CONSOLE_PORT}
+        - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+        - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+        - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+        - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+        - INCLUDE_CSV_SAMPLES=${INCLUDE_CSV_SAMPLES}
+      networks:
+        - net
+    
+    metastore:
+      image: postgres
+      restart: always
+      container_name: metastore
+      hostname: metastore
+      environment: 
+        - POSTGRES_HOST_AUTH_METHOD=md5
+        - POSTGRES_USER=${METASTORE_USER}
+        - POSTGRES_PASSWORD=${METASTORE_PASS}
+      ports:
+        - "5432:5432"
+      volumes:
+        - ../metastore/init.sh:/docker-entrypoint-initdb.d/init.sh
+        - ../metastore/data:/var/lib/postgresql/data
+      networks:
+        - net

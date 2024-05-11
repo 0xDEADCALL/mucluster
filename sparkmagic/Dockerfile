@@ -1,5 +1,10 @@
 FROM python:3.9-bookworm
 
+ARG UID
+ARG GID
+ARG AWS_ACCESS_KEY_ID
+ARG AWS_SECRET_ACCESS_KEY
+
 # Env variables
 ENV NVM_HOME=/root/.nvm
 ENV SPARK_HOME=/opt/spark
@@ -31,17 +36,25 @@ RUN pip install sparkmagic
 
 # Install extensions
 # RUN jupyter nbextension enable --py --sys-prefix widgetsnbextension 
-RUN pip install pip install ipywidgets
-
-RUN echo pip show sparkmagic
+RUN pip install ipywidgets
 
 # Install wrapper kernels
 RUN jupyter-kernelspec install $(pip show sparkmagic | grep Location | cut -d" " -f2)/sparkmagic/kernels/sparkkernel
 RUN jupyter-kernelspec install $(pip show sparkmagic | grep Location | cut -d" " -f2)/sparkmagic/kernels/pysparkkernel
 
-# Copy config file
-RUN mkdir -p /home/lab/.spakmagic
-COPY config.json /home/lab/.spakmagic
+# Install requirements.txt
+COPY requirements.txt /tmp/requirements.txt
+RUN pip install -r /tmp/requirements.txt
+
+
+# Create user
+ENV HOME=/home/lab
+RUN groupadd --gid $GID lab \ 
+    && useradd --uid $UID --gid $GID -m lab
+
+# Copy samples files
+COPY config.json /tmp/config.json
+COPY ./samples /tmp/samples
 
 # Entrypoint
 COPY ./entrypoint.sh .
