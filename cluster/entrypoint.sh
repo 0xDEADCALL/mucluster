@@ -27,7 +27,7 @@ then
         /hbase/coprocessor/hadoop-yarn-server-timelineservice.jar
 
     # Populate HBase
-    hbase org.apache.hadoop.yarn.server.timelineservice.storage.TimelineSchemaCreator -create 
+    hbase org.apache.hadoop.yarn.server.timelineservice.storage.TimelineSchemaCreator -create -skipExistingTable
 
     # Start timeline service v2
     yarn --daemon start timelinereader

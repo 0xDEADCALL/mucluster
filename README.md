@@ -13,7 +13,7 @@ Welcome to _μcluster_ or _mucluster_! A docker playground for experimenting wit
 
 ## Prerequisites
 * Docker installed on your system. You can download and install Docker from [here](https://docs.docker.com/compose/install/).
-* Have a decent amount of RAM (16GB should be enough) and disk space
+* Have a decent amount of RAM, the docker container should be able to allocate at least 10GB (16GB should be barely enough) and disk space
 
 ## Getting Started
 To get started with this docker playground, follow these simple steps:
@@ -29,8 +29,7 @@ To get started with this docker playground, follow these simple steps:
 3. Copy the `.env.sample` file as `.env` and replace the values of `NOTEBOOK_UID` and `NOTEBOOK_GID` with the User ID and Group ID of your current user:
     ```bash
     cp .env.sample .env \
-        && sed -i -e "s|\[UID\]|$(id -u)|g" .env \
-        && sed -i -e "s|\[GID\]|$(id -g)|g" .env 
+        && sed -i -e "s|\[UID\]|$(id -u)|g" -e "s|\[GID\]|$(id -g)|g" .env 
     ```
 4. Build the Docker images:
     ```bash

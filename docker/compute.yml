@@ -1,9 +1,11 @@
 include:
+  - networks.yml
   - storage.yml
 
 services:
   # Master
   node-master:
+    platform: linux/amd64
     build: 
       dockerfile: Dockerfile
       context: ../cluster/.
@@ -11,7 +13,6 @@ services:
         - type=master
         - metastore_user=${METASTORE_USER}
         - metastore_pass=${METASTORE_PASS}
-    image: mumaster:latest
     container_name: node-master
     hostname: node-master
     depends_on:
@@ -31,6 +32,7 @@ services:
 
       # HDFS UI
       - "9870:9870"
+      - "2181:2181"
 
       # Timeline service
       - "19888:19888"
@@ -54,12 +56,12 @@ services:
 
   # Slaves
   node-slave-1:
+    platform: linux/amd64
     build: 
       dockerfile: Dockerfile
       context: ../cluster/.
       args:
         - type=slave
-    image: muslave:latest
     depends_on:
       - node-master
     ports:
@@ -76,6 +78,7 @@ services:
 
   
   node-slave-2:
+    platform: linux/amd64
     build: 
       dockerfile: Dockerfile
       context: ../cluster/.
@@ -83,7 +86,6 @@ services:
         - type=slave
     container_name: node-slave-2
     hostname: node-slave-2
-    image: muslave:latest
     depends_on:
       - node-master
     environment:

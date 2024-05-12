@@ -49,7 +49,7 @@ RUN pip install -r /tmp/requirements.txt
 
 # Create user
 ENV HOME=/home/lab
-RUN groupadd --gid $GID lab \ 
+RUN [ $(getent group "$GID") ] || groupadd --gid $GID lab \ 
     && useradd --uid $UID --gid $GID -m lab
 
 # Copy samples files
