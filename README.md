@@ -13,7 +13,7 @@ Welcome to _μcluster_ or _mucluster_! A docker playground for experimenting wit
 
 ## Prerequisites
 * Docker installed on your system. You can download and install Docker from [here](https://docs.docker.com/compose/install/).
-* Have a decent amount of RAM, the docker container should be able to allocate at least 10GB (16GB should be barely enough) and disk space
+* Have a decent amount of RAM, the docker container needs to be able to allocate at least 10GB (16GB should be barely enough) and disk space
 
 ## Getting Started
 To get started with this docker playground, follow these simple steps:
